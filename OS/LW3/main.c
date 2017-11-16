@@ -1,99 +1,128 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <pthread.h>
+     
+typedef struct matrix{
+        int** elements;
+        int rows;
+        int columns;
+     
+        int* window;
+        int windowHeight;
+        int windowWidth;
+ } Matrix;
+     
+     
      
 int cmp(const void *a, const void *b)
 {
-    return *(int*)a - *(int*)b;
+        return *(int*)a - *(int*)b;
 }
-   
-
-int** MatrixCreate(int rows, int columns) 
+     
+     
+Matrix* MatrixCreate() 
 {
-
-    int **matrix = (int**) malloc(sizeof(*matrix) * rows);
-    for (int i = 0; i < rows; i++) {
-        matrix[i] = (int*)malloc(sizeof(matrix) * columns);
+    Matrix* matrix = (Matrix*)malloc(sizeof(Matrix));
+    printf("Input the number of rows and columns in matrix\n");
+    scanf("%d%d", &(matrix->rows), &(matrix->columns));
+    matrix->elements = (int**) malloc(sizeof(*matrix->elements) * matrix->rows);
+    for (int i = 0; i < matrix->rows; i++) {
+        matrix->elements[i] = (int*)malloc(sizeof(matrix->elements) * matrix->columns);
     }
     printf("Input the elements of matrix\n");
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < columns; j++) {
-            scanf("%d", &matrix[i][j]);
+    for (int i = 0; i < matrix->rows; i++) {
+        for (int j = 0; j < matrix->columns; j++) {
+            scanf("%d", &(matrix->elements[i][j]));
         }
     }
+    printf("Input the width and height of the window\n");
+    scanf("%d%d", &(matrix->windowHeight), &(matrix->windowWidth));
+    if ((matrix->windowHeight % 2 == 0) || (matrix->windowWidth % 2 == 0)) {
+        printf("Usage: parameters of window must be an odd numbers\n");
+        exit(0);
+    }
+    matrix->window = (int*) malloc(sizeof(*matrix) * matrix->windowHeight * matrix->windowWidth);
     return(matrix);
 }   
-
-int ** MatrixCreateEmpty(int rows, int columns)
+     
+     
+void MatrixPrint(Matrix* matrix)
 {
-    int **matrix = (int**) malloc(sizeof(*matrix) * rows);
-    for (int i = 0; i < rows; i++) {
-        matrix[i] = (int*)malloc(sizeof(matrix) * columns);
-    }
-    return(matrix);
-}
-
-
-void MatrixPrint(int **a, int rows, int columns)
-{
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < columns; j++) {
-            printf("%3i\t",a[i][j]);
+    for (int i = 0; i < matrix->rows; i++) {
+        for (int j = 0; j < matrix->columns; j++) {
+            printf("%d ", matrix->elements[i][j]);
         }
         printf("\n");
     }
 }
      
-
-void MatrixFree(int**a, int rows, int columns)
+     
+void MatrixFree(Matrix* matrix)
 {
-    for (int i = 0; i <rows; i++ ) {
-        free(a[i]);
+    for (int i = 0; i < matrix->rows; i++ ) {
+        free(matrix->elements[i]);
     }
-    free(a);
-
-
+    free(matrix->elements);
+    free(matrix->window);
+    free(matrix);
 }   
 
-int main(void) {
-    int rows = 0; int columns = 0; int windowHeight = 0; int windowWidth = 0; int x =0; int i =0; int j =0; 
-    int fx = 0; int fy =0;
-    printf("Input the number of rows and columns in matrix\n");
-    scanf("%d%d", &rows, &columns);
-    int** matrix = NULL; matrix = MatrixCreate(rows, columns);    
-    int** result = NULL; result = MatrixCreateEmpty(rows, columns);
-    for (int i =0; i< rows; i++) {
-        for (int j = 0; j < columns; j++) {
-            result[i][j]=matrix[i][j];
-        }
-    }
+     
+void* MatrixFilter(void* argument) 
+{
 
-    MatrixPrint(matrix, rows, columns);
-    
-    printf("Input the width and height of the window\n");
-    scanf("%d%d", &windowHeight, &windowWidth);
-    int window[windowHeight* windowWidth];
-
-    int edgeX = (int) (windowWidth / 2);
-    int edgeY = (int) (windowHeight / 2);
-
-    for (int x = edgeX; x < columns - edgeX;x++) {
-        for (int y = edgeY; y < rows - edgeY;y++) {
-            i = 0;
-            for (fx = 0; fx < windowWidth; fx++) {
-                for (fy = 0; fy < windowHeight; fy++ ) {
-                    window[i] = matrix[x + fx - edgeX][y + fy - edgeY];
-                    i++;
+    Matrix* matrix = (Matrix*)argument;
+    int z = 0; 
+    for(int x = 0; x < matrix->rows - matrix->windowHeight + 1; x++) {
+        for(int y = 0; y < matrix->columns - matrix->windowWidth + 1; y++) {
+            for (int a = x; a < x + matrix->windowHeight; a++) {
+                for (int b = y;b < y + matrix->windowWidth ; b++) {
+                    matrix->window[z++]= matrix->elements[a][b];
                 }
             }
-            qsort(window,windowHeight*windowWidth,sizeof(int),cmp);
-            result[x][y] = window[windowWidth * windowHeight / 2];
-
+            if (z == matrix->windowHeight * matrix->windowWidth) { 
+                 z = 0;
+            }    
+            qsort(matrix->window,matrix->windowHeight*matrix->windowWidth,sizeof(int),cmp);
+            matrix->elements[x + (int) matrix->windowHeight / 2][y + (int) matrix->windowWidth / 2] = matrix->window[(int) (matrix->windowHeight * matrix->windowWidth / 2)];
         }
     }
-    MatrixPrint(result, rows, columns);
-   
-    MatrixFree(matrix, rows, columns);
-    MatrixFree(result, rows, columns);
-    return 0;
+    pthread_exit(0);
+    return NULL;
 }
+int main(int argc, char const *argv[]) {
+        if(argc != 2) {
+            printf("Usage: enter the number of threads\n");
+            exit(0);
+        }
+   
+        int threadsNum = atoi(argv[1]);
+        if (threadsNum <= 0) {
+            printf("Usage: number of threads must be a positive integer number\n");
+            exit(0);
+        }
+
+        pthread_t process[threadsNum];
+    	Matrix* matrix = MatrixCreate();
+    	MatrixPrint(matrix);
+       	printf("\n");
+      
+        for(int iter = 0; iter < threadsNum; iter++) {  
+            if (pthread_create(&process[iter], NULL, MatrixFilter, (void*) matrix)) {
+                perror("pthread_create");
+                exit(-1);
+            }
+
+        }
+        for(int iter = 0; iter < threadsNum; iter++) {  
+            if (pthread_join(process[iter], NULL)) {
+                perror("pthread_join");
+                exit(-2);
+            }
+
+        }
+        MatrixPrint(matrix);
+        MatrixFree(matrix);
+     
+        return 0;
+    }
