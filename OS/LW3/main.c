@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <pthread.h>
      
-typedef struct matrix{
+const int MAXTHREADS =  31177; // cat /proc/sys/kernel/threads-max 
+
+
+typedef struct matrix {
         int** elements;
         int rows;
         int columns;
@@ -16,7 +19,7 @@ typedef struct matrix{
      
 int cmp(const void *a, const void *b)
 {
-        return *(int*)a - *(int*)b;
+    return *(int*)a - *(int*)b;
 }
      
      
@@ -38,8 +41,12 @@ Matrix* MatrixCreate()
     printf("Input the width and height of the window\n");
     scanf("%d%d", &(matrix->windowHeight), &(matrix->windowWidth));
     if ((matrix->windowHeight % 2 == 0) || (matrix->windowWidth % 2 == 0)) {
-        printf("Usage: parameters of window must be an odd numbers\n");
+        printf("Usage: parameters of window must be odd numbers\n");
         exit(0);
+    }
+    if (matrix->rows * matrix->columns < matrix->windowHeight * matrix->windowWidth) {
+    	printf("Usage: parameters of window must be less then matrix parameters\n");
+    	exit(0);
     }
     matrix->window = (int*) malloc(sizeof(*matrix) * matrix->windowHeight * matrix->windowWidth);
     return(matrix);
@@ -87,7 +94,6 @@ void* MatrixFilter(void* argument)
             matrix->elements[x + (int) matrix->windowHeight / 2][y + (int) matrix->windowWidth / 2] = matrix->window[(int) (matrix->windowHeight * matrix->windowWidth / 2)];
         }
     }
-    pthread_exit(0);
     return NULL;
 }
 int main(int argc, char const *argv[]) {
@@ -95,10 +101,9 @@ int main(int argc, char const *argv[]) {
             printf("Usage: enter the number of threads\n");
             exit(0);
         }
-   
         int threadsNum = atoi(argv[1]);
-        if (threadsNum <= 0) {
-            printf("Usage: number of threads must be a positive integer number\n");
+        if (threadsNum <= 0 || threadsNum > MAXTHREADS) {
+            printf("Usage: number of threads must be a positive integer number less then 31177\n");
             exit(0);
         }
 
@@ -106,21 +111,27 @@ int main(int argc, char const *argv[]) {
     	Matrix* matrix = MatrixCreate();
     	MatrixPrint(matrix);
        	printf("\n");
-      
-        for(int iter = 0; iter < threadsNum; iter++) {  
+      	
+      	int K; 
+      	printf("Input the quantity of filters\n");
+      	scanf("%d", &K);
+      	if (K <= 0 || K > MAXTHREADS || K > threadsNum) {
+      		printf("Usage: number of fileters must be a positive integer number less then numbers of threads\n");
+            exit(0);
+      	}
+
+        for(int iter = 0; iter < K; iter++) {  
             if (pthread_create(&process[iter], NULL, MatrixFilter, (void*) matrix)) {
                 perror("pthread_create");
                 exit(-1);
             }
-
-        }
-        for(int iter = 0; iter < threadsNum; iter++) {  
             if (pthread_join(process[iter], NULL)) {
                 perror("pthread_join");
                 exit(-2);
             }
 
         }
+
         MatrixPrint(matrix);
         MatrixFree(matrix);
      
