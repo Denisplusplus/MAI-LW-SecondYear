@@ -262,9 +262,28 @@ void Search(const int fd, const int fileSize, const int RAMLimit, char const* su
      
 }
 
+void CheckFileSize(int fd, char const *filename)
+{
+    struct stat fileStat;
+    fd = open(filename, O_RDWR);
+    if (fd == -1) {
+        printf("open\n");
+        exit(3);
+    }
+    if (fstat(fd, &fileStat) == -1) {
+        printf("fstat");
+        exit(4);
+    }
+    if (fileStat.st_size <=0 || fileStat.st_size > 10000000000) {
+        printf("Bad filesize\n");
+        exit(10);
+    }
+}
+
 
 void GetInfo(int fd, int size, char const* filename)    
 {   
+    CheckFileSize(fd, filename);
     struct stat fileStat;
     FixSize(&size);
     fd = open(filename, O_RDWR);
@@ -283,7 +302,8 @@ void GetInfo(int fd, int size, char const* filename)
 }
 
 void GetStringPrint(int fd, int size, char const* filename, int numStr)
-{
+{   
+    CheckFileSize(fd, filename);
     struct stat fileStat;
     FixSize(&size);
     fd = open(filename, O_RDWR);
@@ -301,6 +321,7 @@ void GetStringPrint(int fd, int size, char const* filename, int numStr)
 
 void GetStringSearch(int fd, int size, char const* filename, char const* subString)
 {
+    CheckFileSize(fd, filename);
     char* str = Process(subString); 
     struct stat fileStat;
     FixSize(&size);
@@ -531,6 +552,7 @@ void ReplaceString(const int fd, const int fileSize,  const int RAMLimit, char c
 
 void GetStringReplace(int fd, int size, char const* filename, char const* oldString, char const* newString)
 {
+    CheckFileSize(fd, filename);
     struct stat fileStat;
     FixSize(&size);
     fd = open(filename, O_RDWR);

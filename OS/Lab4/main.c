@@ -88,6 +88,7 @@ int main(int argc, char const *argv[]) {
 						printf("Input the string to replace\n");
 						scanf("%s", oldString);
 						printf("Input a new string\n");
+						memset(newString, '\0', 256);
 						scanf("%s", newString);
 						GetStringReplace(fd, atoi(argv[1]), fileName, oldString, newString);
 						break;	

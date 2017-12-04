@@ -21,6 +21,7 @@ void StringPrint(const int fd, const int fileSize, const int RAMLimit, const int
 void GetStringPrint(int fd, int size, char const* filename, int numStr);
 void Info(const int fd, const int fileSize, const int RAMLimit);
 void GetInfo(int fd, int size, char const* filename);
+void CheckFileSize(int fd, char const *filename);
 void Search(const int fd, const int fileSize, const int RAMLimit, char const* subString);
 void GetStringSearch(int fd, int size, char const* filename, char const* subString);
 char* Process(char const* src);

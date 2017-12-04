@@ -1,0 +1,26 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <inttypes.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/io.h>
+#include <sys/mman.h>
+#include "FileProcessor.h"
+
+void menu(void);
+
+int main(int argc, char const *argv[]) {
+	int fd; 
+	struct stat fileStat;
+	char fileName[256]; char newString[256]; char oldString[256];
+	int size = 0; int numberOfString;
+	int choise;
+
+	int action = Filter(argc, argv);
+	switch(action) { //Single String Mode
+		case 1: 
+		{
+			GetInfo(fd, size, argv[1]); // RAM
